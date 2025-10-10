@@ -472,7 +472,14 @@ const Index = () => {
               </div>
             </Card>
             <div className="space-y-4">
-              {filteredComplaints.length === 0 ? (
+              {loading ? (
+                <Card className="p-12 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p className="text-gray-600">Загрузка жалоб...</p>
+                  </div>
+                </Card>
+              ) : filteredComplaints.length === 0 ? (
                 <Card className="p-12 text-center">
                   <Icon name="Inbox" size={48} className="mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">
