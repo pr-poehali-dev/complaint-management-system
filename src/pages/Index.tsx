@@ -51,14 +51,22 @@ const Index = () => {
   const fetchComplaints = async () => {
     try {
       setLoading(true);
+      console.log('Загрузка жалоб с:', API_URL);
       const response = await fetch(API_URL);
+      console.log('Статус ответа:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Получено жалоб:', data.length);
       setComplaints(data);
     } catch (error) {
-      console.error('Failed to fetch complaints:', error);
+      console.error('Ошибка загрузки жалоб:', error);
       toast({
-        title: 'Ошибка',
-        description: 'Не удалось загрузить жалобы',
+        title: 'Ошибка загрузки',
+        description: error instanceof Error ? error.message : 'Не удалось загрузить жалобы',
         variant: 'destructive',
       });
     } finally {
