@@ -97,11 +97,16 @@ const Index = () => {
     }
 
     try {
+      console.log('Отправка жалобы:', newComplaint);
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newComplaint),
       });
+      
+      console.log('Ответ сервера:', response.status);
+      const data = await response.json();
+      console.log('Данные:', data);
       
       if (!response.ok) throw new Error('Failed to create complaint');
       
@@ -112,7 +117,7 @@ const Index = () => {
         description: 'Ваша жалоба принята на рассмотрение',
       });
     } catch (error) {
-      console.error('Failed to submit complaint:', error);
+      console.error('Ошибка отправки:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось отправить жалобу',
