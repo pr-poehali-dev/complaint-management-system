@@ -52,6 +52,9 @@ const Index = () => {
 
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [response, setResponse] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ComplaintStatus | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<ComplaintType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSubmitComplaint = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,10 +136,19 @@ const Index = () => {
     return type === 'against_guard' ? 'На дежурного' : 'От дежурного';
   };
 
-  const filterComplaints = (filter: string) => {
-    if (filter === 'all') return complaints;
-    return complaints.filter(c => c.status === filter);
+  const getFilteredComplaints = () => {
+    return complaints.filter(complaint => {
+      const matchesStatus = statusFilter === 'all' || complaint.status === statusFilter;
+      const matchesType = typeFilter === 'all' || complaint.type === typeFilter;
+      const matchesSearch = searchQuery === '' || 
+        complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        complaint.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesStatus && matchesType && matchesSearch;
+    });
   };
+
+  const filteredComplaints = getFilteredComplaints();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -228,14 +240,59 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="list" className="animate-fade-in">
+            <Card className="p-4 mb-6 shadow-md">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Поиск</Label>
+                  <div className="relative">
+                    <Icon name="Search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Input
+                      placeholder="Поиск по заголовку или описанию..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Статус</Label>
+                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ComplaintStatus | 'all')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все статусы</SelectItem>
+                      <SelectItem value="pending">Ожидает</SelectItem>
+                      <SelectItem value="review">Требует разбора</SelectItem>
+                      <SelectItem value="resolved">Решено</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Тип жалобы</Label>
+                  <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as ComplaintType | 'all')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все типы</SelectItem>
+                      <SelectItem value="against_guard">На дежурного</SelectItem>
+                      <SelectItem value="from_guard">От дежурного</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
             <div className="space-y-4">
-              {complaints.length === 0 ? (
+              {filteredComplaints.length === 0 ? (
                 <Card className="p-12 text-center">
                   <Icon name="Inbox" size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Жалоб пока нет</p>
+                  <p className="text-gray-500">
+                    {complaints.length === 0 ? 'Жалоб пока нет' : 'Жалобы не найдены по выбранным фильтрам'}
+                  </p>
                 </Card>
               ) : (
-                complaints.map((complaint) => (
+                filteredComplaints.map((complaint) => (
                   <Card key={complaint.id} className="p-6 shadow-md hover:shadow-lg transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
@@ -274,12 +331,54 @@ const Index = () => {
           <TabsContent value="admin" className="animate-fade-in">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-                  <Icon name="ListFilter" size={24} className="text-primary" />
-                  Список жалоб
-                </h2>
+                <div className="mb-4">
+                  <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <Icon name="ListFilter" size={24} className="text-primary" />
+                    Список жалоб
+                  </h2>
+                  <div className="space-y-3 mb-4">
+                    <div className="relative">
+                      <Icon name="Search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <Input
+                        placeholder="Поиск..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ComplaintStatus | 'all')}>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все статусы</SelectItem>
+                          <SelectItem value="pending">Ожидает</SelectItem>
+                          <SelectItem value="review">Требует разбора</SelectItem>
+                          <SelectItem value="resolved">Решено</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as ComplaintType | 'all')}>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все типы</SelectItem>
+                          <SelectItem value="against_guard">На дежурного</SelectItem>
+                          <SelectItem value="from_guard">От дежурного</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
                 <div className="space-y-3">
-                  {complaints.map((complaint) => (
+                  {filteredComplaints.length === 0 ? (
+                    <Card className="p-6 text-center">
+                      <Icon name="Inbox" size={32} className="mx-auto text-gray-300 mb-2" />
+                      <p className="text-sm text-gray-500">Не найдено</p>
+                    </Card>
+                  ) : (
+                    filteredComplaints.map((complaint) => (
                     <Card
                       key={complaint.id}
                       className={`p-4 cursor-pointer transition-all ${
@@ -301,7 +400,8 @@ const Index = () => {
                         <Icon name="ChevronRight" size={20} className="text-gray-400" />
                       </div>
                     </Card>
-                  ))}
+                  ))
+                  )}
                 </div>
               </div>
 
