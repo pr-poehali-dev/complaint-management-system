@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ interface Complaint {
   status: ComplaintStatus;
   date: string;
   response?: string;
+  photo?: string;
 }
 
 const Index = () => {
@@ -48,6 +49,7 @@ const Index = () => {
     title: '',
     description: '',
     type: 'against_guard' as ComplaintType,
+    photo: '',
   });
 
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
@@ -55,6 +57,40 @@ const Index = () => {
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<ComplaintType | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('complaints');
+    if (saved) {
+      try {
+        setComplaints(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load complaints', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('complaints', JSON.stringify(complaints));
+  }, [complaints]);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Ошибка',
+          description: 'Размер файла не должен превышать 5 МБ',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewComplaint({ ...newComplaint, photo: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmitComplaint = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +111,7 @@ const Index = () => {
     };
 
     setComplaints([complaint, ...complaints]);
-    setNewComplaint({ title: '', description: '', type: 'against_guard' });
+    setNewComplaint({ title: '', description: '', type: 'against_guard', photo: '' });
     toast({
       title: 'Жалоба отправлена',
       description: 'Ваша жалоба принята на рассмотрение',
@@ -318,6 +354,38 @@ const Index = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="photo">Фото (необязательно)</Label>
+                  <div className="space-y-3">
+                    <Input
+                      id="photo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="cursor-pointer"
+                    />
+                    {newComplaint.photo && (
+                      <div className="relative inline-block">
+                        <img
+                          src={newComplaint.photo}
+                          alt="Прикрепленное фото"
+                          className="max-w-xs rounded-lg border shadow-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => setNewComplaint({ ...newComplaint, photo: '' })}
+                        >
+                          <Icon name="X" size={16} />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">Максимальный размер: 5 МБ</p>
+                </div>
+
                 <Button type="submit" size="lg" className="w-full">
                   <Icon name="Send" size={18} className="mr-2" />
                   Отправить жалобу
@@ -400,6 +468,16 @@ const Index = () => {
                       </div>
                     </div>
                     <p className="text-gray-700 mb-4">{complaint.description}</p>
+                    {complaint.photo && (
+                      <div className="mb-4">
+                        <img
+                          src={complaint.photo}
+                          alt="Приложенное фото"
+                          className="max-w-sm rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => window.open(complaint.photo, '_blank')}
+                        />
+                      </div>
+                    )}
                     {complaint.response && (
                       <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
                         <div className="flex items-center gap-2 mb-2">
@@ -510,6 +588,18 @@ const Index = () => {
                         <Label className="text-gray-600">Описание</Label>
                         <p className="text-gray-800">{selectedComplaint.description}</p>
                       </div>
+
+                      {selectedComplaint.photo && (
+                        <div>
+                          <Label className="text-gray-600 mb-2 block">Приложенное фото</Label>
+                          <img
+                            src={selectedComplaint.photo}
+                            alt="Приложенное фото"
+                            className="max-w-full rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => window.open(selectedComplaint.photo, '_blank')}
+                          />
+                        </div>
+                      )}
 
                       <div className="flex gap-4">
                         <div>
