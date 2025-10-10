@@ -97,16 +97,11 @@ const Index = () => {
     }
 
     try {
-      console.log('Отправка жалобы:', newComplaint);
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newComplaint),
       });
-      
-      console.log('Ответ сервера:', response.status);
-      const data = await response.json();
-      console.log('Данные:', data);
       
       if (!response.ok) throw new Error('Failed to create complaint');
       
