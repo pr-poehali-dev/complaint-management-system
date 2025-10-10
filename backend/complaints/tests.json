@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "Get all complaints",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "skip"
+    },
+    {
+      "name": "Create new complaint",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "title": "Test complaint",
+        "description": "Test description",
+        "type": "against_guard"
+      },
+      "expectedStatus": 201,
+      "bodyMatcher": "skip"
+    }
+  ]
+}

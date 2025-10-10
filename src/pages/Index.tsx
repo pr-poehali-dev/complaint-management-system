@@ -14,36 +14,22 @@ type ComplaintStatus = 'pending' | 'review' | 'resolved';
 type ComplaintType = 'against_guard' | 'from_guard';
 
 interface Complaint {
-  id: string;
+  id: number;
   title: string;
   description: string;
   type: ComplaintType;
   status: ComplaintStatus;
   date: string;
-  response?: string;
+  response?: string | null;
   photo?: string;
 }
 
+const API_URL = 'https://functions.poehali.dev/5a02d605-e811-4d39-a68f-944fb55cd466';
+
 const Index = () => {
   const { toast } = useToast();
-  const [complaints, setComplaints] = useState<Complaint[]>([
-    {
-      id: '1',
-      title: 'Грубое обращение с посетителями',
-      description: 'Дежурный Иванов И.И. нагрубил посетителю в фойе здания без видимой причины.',
-      type: 'against_guard',
-      status: 'review',
-      date: '2025-10-08',
-    },
-    {
-      id: '2',
-      title: 'Нарушение пропускного режима',
-      description: 'Сотрудник Петров пытался провести постороннее лицо без оформления пропуска.',
-      type: 'from_guard',
-      status: 'pending',
-      date: '2025-10-09',
-    },
-  ]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [newComplaint, setNewComplaint] = useState({
     title: '',
@@ -59,19 +45,26 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('complaints');
-    if (saved) {
-      try {
-        setComplaints(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load complaints', e);
-      }
-    }
+    fetchComplaints();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('complaints', JSON.stringify(complaints));
-  }, [complaints]);
+  const fetchComplaints = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setComplaints(data);
+    } catch (error) {
+      console.error('Failed to fetch complaints:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить жалобы',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +85,7 @@ const Index = () => {
     }
   };
 
-  const handleSubmitComplaint = (e: React.FormEvent) => {
+  const handleSubmitComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComplaint.title || !newComplaint.description) {
       toast({
@@ -103,32 +96,57 @@ const Index = () => {
       return;
     }
 
-    const complaint: Complaint = {
-      id: Date.now().toString(),
-      ...newComplaint,
-      status: 'pending',
-      date: new Date().toISOString().split('T')[0],
-    };
-
-    setComplaints([complaint, ...complaints]);
-    setNewComplaint({ title: '', description: '', type: 'against_guard', photo: '' });
-    toast({
-      title: 'Жалоба отправлена',
-      description: 'Ваша жалоба принята на рассмотрение',
-    });
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newComplaint),
+      });
+      
+      if (!response.ok) throw new Error('Failed to create complaint');
+      
+      await fetchComplaints();
+      setNewComplaint({ title: '', description: '', type: 'against_guard', photo: '' });
+      toast({
+        title: 'Жалоба отправлена',
+        description: 'Ваша жалоба принята на рассмотрение',
+      });
+    } catch (error) {
+      console.error('Failed to submit complaint:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отправить жалобу',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleStatusChange = (complaintId: string, newStatus: ComplaintStatus) => {
-    setComplaints(complaints.map(c => 
-      c.id === complaintId ? { ...c, status: newStatus } : c
-    ));
-    toast({
-      title: 'Статус обновлен',
-      description: `Статус жалобы изменен на "${getStatusLabel(newStatus)}"`,
-    });
+  const handleStatusChange = async (complaintId: number, newStatus: ComplaintStatus) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: complaintId, status: newStatus }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to update status');
+      
+      await fetchComplaints();
+      toast({
+        title: 'Статус обновлен',
+        description: `Статус жалобы изменен на "${getStatusLabel(newStatus)}"`,
+      });
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить статус',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleResponseSubmit = (complaintId: string) => {
+  const handleResponseSubmit = async (complaintId: number) => {
     if (!response.trim()) {
       toast({
         title: 'Ошибка',
@@ -138,15 +156,30 @@ const Index = () => {
       return;
     }
 
-    setComplaints(complaints.map(c => 
-      c.id === complaintId ? { ...c, response, status: 'resolved' } : c
-    ));
-    setResponse('');
-    setSelectedComplaint(null);
-    toast({
-      title: 'Ответ отправлен',
-      description: 'Жалоба закрыта с ответом',
-    });
+    try {
+      const apiResponse = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: complaintId, response, status: 'resolved' }),
+      });
+      
+      if (!apiResponse.ok) throw new Error('Failed to submit response');
+      
+      await fetchComplaints();
+      setResponse('');
+      setSelectedComplaint(null);
+      toast({
+        title: 'Ответ отправлен',
+        description: 'Жалоба закрыта с ответом',
+      });
+    } catch (error) {
+      console.error('Failed to submit response:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отправить ответ',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusBadge = (status: ComplaintStatus) => {
