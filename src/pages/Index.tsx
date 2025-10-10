@@ -150,12 +150,99 @@ const Index = () => {
 
   const filteredComplaints = getFilteredComplaints();
 
+  const getStats = () => {
+    const total = complaints.length;
+    const pending = complaints.filter(c => c.status === 'pending').length;
+    const review = complaints.filter(c => c.status === 'review').length;
+    const resolved = complaints.filter(c => c.status === 'resolved').length;
+    const againstGuard = complaints.filter(c => c.type === 'against_guard').length;
+    const fromGuard = complaints.filter(c => c.type === 'from_guard').length;
+    
+    return { total, pending, review, resolved, againstGuard, fromGuard };
+  };
+
+  const stats = getStats();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Платформа жалоб</h1>
           <p className="text-gray-600">Управление жалобами на дежурных и от дежурных</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Всего жалоб</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Icon name="FileText" size={24} className="text-blue-600" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Ожидает</p>
+                <p className="text-3xl font-bold text-blue-600">{stats.pending}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Icon name="Clock" size={24} className="text-blue-600" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">На разборе</p>
+                <p className="text-3xl font-bold text-amber-600">{stats.review}</p>
+              </div>
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <Icon name="AlertTriangle" size={24} className="text-amber-600" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Решено</p>
+                <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Icon name="CheckCircle" size={24} className="text-green-600" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">На дежурных</p>
+                <p className="text-3xl font-bold text-red-600">{stats.againstGuard}</p>
+              </div>
+              <div className="p-3 bg-red-100 rounded-lg">
+                <Icon name="AlertCircle" size={24} className="text-red-600" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-4 bg-white shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">От дежурных</p>
+                <p className="text-3xl font-bold text-primary">{stats.fromGuard}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Icon name="ShieldAlert" size={24} className="text-primary" />
+              </div>
+            </div>
+          </Card>
         </div>
 
         <Tabs defaultValue="submit" className="w-full">
